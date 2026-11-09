@@ -1,0 +1,1674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PyroDischarge: Lunar Lander Separation Electrostatic Shock Sentry</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Google Fonts: Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+
+  <!-- Bulletproof MathJax v3 Configuration -->
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$', '$$'], ['\\[', '\\]']],
+        processEscapes: true
+      },
+      svg: { fontCache: 'global' },
+      options: {
+        skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      }
+    };
+  </script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #03050a;
+      color: #e2e8f0;
+      overflow-x: hidden;
+    }
+    .font-mono-code {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .formula-box {
+      background-color: #040813;
+      border: 1px solid #1e293b;
+      padding: 0.85rem;
+      border-radius: 0.5rem;
+      text-align: center;
+      color: #38bdf8;
+      overflow-x: auto;
+      margin: 0.75rem 0;
+      box-shadow: inset 0 1px 3px rgba(0,0,0,0.6);
+    }
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #090d16;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1e293b;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #38bdf8;
+    }
+    .glass-card {
+      background: rgba(13, 19, 33, 0.75);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+    }
+    .glass-card-hazard {
+      background: rgba(36, 12, 19, 0.45);
+      border: 1px solid rgba(239, 68, 68, 0.25);
+    }
+    .glass-card-safe {
+      background: rgba(6, 30, 24, 0.45);
+      border: 1px solid rgba(16, 185, 129, 0.25);
+    }
+    @media print {
+      body { background: #ffffff !important; color: #000000 !important; }
+      .no-print { display: none !important; }
+      .formula-box { background: #f8fafc !important; color: #0284c7 !important; border-color: #cbd5e1 !important; }
+      .glass-card { background: #ffffff !important; border-color: #e2e8f0 !important; }
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col bg-[#03050a] text-slate-200">
+
+  <!-- Top Header / Telemetry Bar -->
+  <header class="border-b border-slate-800/80 bg-[#060a14]/90 backdrop-blur sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      
+      <!-- Logo & Title -->
+      <div class="flex items-center space-x-3">
+        <div class="relative flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500/20 via-sky-500/10 to-amber-500/20 border border-cyan-500/30 shadow-[0_0_15px_rgba(6,182,212,0.25)]">
+          <i data-lucide="zap" class="w-5 h-5 text-cyan-400"></i>
+          <span class="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-cyan-500"></span>
+          </span>
+        </div>
+        <div>
+          <div class="flex items-center space-x-2">
+            <h1 class="text-base sm:text-lg font-bold tracking-tight text-white flex items-center gap-2">
+              <span>PyroDischarge</span>
+              <span class="text-xs px-2 py-0.5 rounded-full bg-cyan-950/80 text-cyan-400 border border-cyan-800/50 font-mono-code font-normal">SBIR-STTR Phase I</span>
+            </h1>
+          </div>
+          <p class="text-xs text-slate-400 hidden sm:block">Lunar Lander Separation Triboelectric ESD Sentry & Active Plasma Neutralizer</p>
+        </div>
+      </div>
+
+      <!-- Realtime Avionics Badges -->
+      <div class="flex items-center space-x-3">
+        <div class="hidden md:flex items-center space-x-2 bg-slate-900/80 border border-slate-800 px-3 py-1.5 rounded-lg text-xs font-mono-code">
+          <span class="text-slate-400">STAGE:</span>
+          <span id="headerFlightMode" class="text-emerald-400 font-semibold tracking-wider">PRE-SEPARATION ARMED</span>
+        </div>
+        <div class="flex items-center space-x-2 bg-slate-900/80 border border-slate-800 px-3 py-1.5 rounded-lg text-xs font-mono-code">
+          <div id="safetyGlow" class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div>
+          <span id="safetyStatusLabel" class="text-emerald-400 font-medium">PYRO SAFE</span>
+        </div>
+        <button onclick="window.print()" class="no-print p-2 rounded-lg bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700 text-slate-300 hover:text-white transition" title="Print Executive Dossier">
+          <i data-lucide="printer" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 border-t border-slate-800/50 flex space-x-2 overflow-x-auto no-print py-1">
+      <button id="tabBtnSim" onclick="switchTab('sim')" class="flex items-center space-x-2 px-4 py-2 text-xs sm:text-sm font-medium rounded-lg text-cyan-400 bg-cyan-950/40 border border-cyan-500/30 transition shadow-[0_0_10px_rgba(6,182,212,0.1)]">
+        <i data-lucide="activity" class="w-4 h-4"></i>
+        <span>Live Telemetry & Sentry HUD</span>
+      </button>
+      <button id="tabBtnPhysics" onclick="switchTab('physics')" class="flex items-center space-x-2 px-4 py-2 text-xs sm:text-sm font-medium rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 transition">
+        <i data-lucide="atom" class="w-4 h-4"></i>
+        <span>Governing Physics & Observer Math</span>
+      </button>
+      <button id="tabBtnProposal" onclick="switchTab('proposal')" class="flex items-center space-x-2 px-4 py-2 text-xs sm:text-sm font-medium rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 transition">
+        <i data-lucide="file-check-2" class="w-4 h-4"></i>
+        <span>$225k NASA SBIR / UCF STTR</span>
+      </button>
+      <button id="tabBtnARR" onclick="switchTab('arr')" class="flex items-center space-x-2 px-4 py-2 text-xs sm:text-sm font-medium rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 transition">
+        <i data-lucide="trending-up" class="w-4 h-4"></i>
+        <span>Commercial & Civil ARR ($214.2M)</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Content Area Container -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+    <!-- ========================================================================= -->
+    <!-- TAB 1: LIVE SIMULATION & TELEMETRY HUD (#viewSim)                          -->
+    <!-- ========================================================================= -->
+    <div id="viewSim" class="space-y-6">
+      
+      <!-- Top Overview Metrics Strip -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div class="glass-card rounded-xl p-3 sm:p-4">
+          <div class="text-xs font-mono-code text-slate-400 uppercase tracking-wider">Relative Vel ($v$)</div>
+          <div class="text-xl sm:text-2xl font-bold font-mono-code text-white mt-1 flex items-baseline justify-between">
+            <span id="metricVel">0.00</span>
+            <span class="text-xs text-slate-400 font-normal">m/s</span>
+          </div>
+          <div class="text-[10px] text-slate-400 mt-1 flex items-center gap-1">
+            <span class="inline-block w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
+            Separation Guide Track
+          </div>
+        </div>
+
+        <div class="glass-card rounded-xl p-3 sm:p-4">
+          <div class="text-xs font-mono-code text-slate-400 uppercase tracking-wider">Tribo Charge ($Q$)</div>
+          <div class="text-xl sm:text-2xl font-bold font-mono-code text-cyan-400 mt-1 flex items-baseline justify-between">
+            <span id="metricCharge">0.0</span>
+            <span class="text-xs text-slate-400 font-normal">nC</span>
+          </div>
+          <div class="text-[10px] text-slate-400 mt-1 flex items-center gap-1">
+            <span class="inline-block w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
+            Dielectric Interface Skin
+          </div>
+        </div>
+
+        <div class="glass-card rounded-xl p-3 sm:p-4">
+          <div class="text-xs font-mono-code text-slate-400 uppercase tracking-wider">E-Field Margin</div>
+          <div class="text-xl sm:text-2xl font-bold font-mono-code text-emerald-400 mt-1 flex items-baseline justify-between">
+            <span id="metricMargin">98.4</span>
+            <span class="text-xs text-slate-400 font-normal">%</span>
+          </div>
+          <div class="text-[10px] text-slate-400 mt-1 flex items-center gap-1">
+            <span id="marginDot" class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+            MIL-STD-1576 Limit: 25 kV/m
+          </div>
+        </div>
+
+        <div class="glass-card rounded-xl p-3 sm:p-4">
+          <div class="text-xs font-mono-code text-slate-400 uppercase tracking-wider">Bleed Discharge Rate</div>
+          <div class="text-xl sm:text-2xl font-bold font-mono-code text-purple-400 mt-1 flex items-baseline justify-between">
+            <span id="metricBleedRate">0.00</span>
+            <span class="text-xs text-slate-400 font-normal">$\mu\text{A}$</span>
+          </div>
+          <div class="text-[10px] text-slate-400 mt-1 flex items-center gap-1">
+            <span id="bleedDot" class="inline-block w-1.5 h-1.5 rounded-full bg-purple-400"></span>
+            Active Field Ion Emitter
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Stage View: Split into Physics Canvas & Phase Space Scatter -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Interactive Separation Canvas (Lg: 7 cols) -->
+        <div class="lg:col-span-7 glass-card rounded-2xl p-4 flex flex-col justify-between border border-slate-800">
+          <div class="flex items-center justify-between pb-3 border-b border-slate-800/80">
+            <div class="flex items-center space-x-2">
+              <i data-lucide="layers" class="w-4 h-4 text-cyan-400"></i>
+              <h2 class="text-sm font-semibold tracking-wide text-white uppercase font-mono-code">Lunar Staging Mechanical Interface</h2>
+            </div>
+            <div class="flex items-center space-x-2 text-xs font-mono-code">
+              <span class="text-slate-400">Cold-Gas Thrusters:</span>
+              <span id="rcsIndicator" class="px-2 py-0.5 rounded bg-slate-800 text-slate-400">IDLE</span>
+            </div>
+          </div>
+
+          <!-- Canvas Container -->
+          <div class="relative w-full h-[320px] sm:h-[360px] bg-[#020408] rounded-xl overflow-hidden my-3 border border-slate-900 shadow-inner">
+            <canvas id="separationCanvas" class="w-full h-full block"></canvas>
+
+            <!-- Overlay HUD Watermark / Diagnostic Readouts -->
+            <div class="absolute top-3 left-3 pointer-events-none space-y-1 text-[11px] font-mono-code text-slate-400 bg-slate-950/80 p-2.5 rounded border border-slate-800/80 backdrop-blur">
+              <div>ORBIT: <span class="text-white">100 km Low Lunar Orbit (LLO)</span></div>
+              <div>ENVIRONMENT: <span class="text-white">High Lunar Vacuum ($10^{-11}\text{ Torr}$)</span></div>
+              <div>PYRO BOLTS: <span id="boltStatus" class="text-emerald-400 font-semibold">4x NSI-1 CONNECTED</span></div>
+              <div>EED SPARK THRESHOLD: <span class="text-rose-400">$\mathcal{E}_{\text{crit}} \ge 25.0\text{ mJ}$</span></div>
+            </div>
+
+            <!-- Discharge Plasma Active Glow Overlay -->
+            <div id="plasmaGlowOverlay" class="absolute inset-0 pointer-events-none opacity-0 transition-opacity duration-300 bg-cyan-500/10 flex items-center justify-center">
+              <div class="text-xs font-mono-code px-3 py-1 rounded-full bg-cyan-900/80 border border-cyan-400 text-cyan-200 tracking-wider animate-pulse">
+                ACTIVE PLASMA SENTRY EMITTING NEUTRALIZING SHEATH
+              </div>
+            </div>
+          </div>
+
+          <!-- Canvas Controls & Simulation Triggers -->
+          <div class="flex flex-wrap items-center justify-between gap-3 pt-2 text-xs">
+            <div class="flex items-center space-x-2">
+              <button id="btnStartSep" onclick="triggerSeparation()" class="px-4 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 font-semibold text-white transition flex items-center space-x-2 shadow-[0_0_12px_rgba(6,182,212,0.3)]">
+                <i data-lucide="play" class="w-3.5 h-3.5"></i>
+                <span>Initiate Stage Separation</span>
+              </button>
+              <button id="btnResetSim" onclick="resetSimulation()" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition flex items-center space-x-1.5">
+                <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+                <span>Reset Flight State</span>
+              </button>
+            </div>
+            
+            <div class="flex items-center space-x-2">
+              <label class="text-slate-400 font-mono-code">Sentry Mode:</label>
+              <button id="btnToggleSentry" onclick="toggleSentryAutonomy()" class="px-3 py-1.5 rounded-lg bg-emerald-950/70 border border-emerald-500/40 text-emerald-300 font-mono-code font-semibold hover:bg-emerald-900/60 transition flex items-center space-x-1.5">
+                <i data-lucide="shield-check" class="w-3.5 h-3.5"></i>
+                <span id="sentryModeLabel">AUTONOMOUS SENTRY: ACTIVE</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Phase-Space Chart: Q vs. v (Lg: 5 cols) -->
+        <div class="lg:col-span-5 glass-card rounded-2xl p-4 flex flex-col justify-between border border-slate-800">
+          <div class="flex items-center justify-between pb-3 border-b border-slate-800/80">
+            <div class="flex items-center space-x-2">
+              <i data-lucide="crosshair" class="w-4 h-4 text-amber-400"></i>
+              <h2 class="text-sm font-semibold tracking-wide text-white uppercase font-mono-code">Phase Space $(Q, v)$ Hazard Map</h2>
+            </div>
+            <span class="text-[10px] font-mono-code px-2 py-0.5 rounded bg-amber-950/60 border border-amber-800/40 text-amber-300">
+              ESD SPARK BOUNDARY
+            </span>
+          </div>
+
+          <!-- Scatter Chart Container -->
+          <div class="relative w-full h-[280px] sm:h-[310px] my-2">
+            <canvas id="phaseSpaceChart"></canvas>
+          </div>
+
+          <!-- Phase-space legend & description -->
+          <div class="p-2.5 rounded-lg bg-slate-950/60 border border-slate-900 text-[11px] text-slate-400 leading-relaxed font-mono-code">
+            <div class="flex items-center justify-between text-slate-300 mb-1">
+              <span>CRITICAL THRESHOLD:</span>
+              <span class="text-rose-400">$Q_{\text{crit}}(v) = Q_0 + \kappa \cdot v^{1.45}$</span>
+            </div>
+            Red shaded corridor represents lethal spark discharge triggering sensitive 1-Amp/1-Watt electro-explosive devices (EEDs).
+          </div>
+        </div>
+      </div>
+
+      <!-- Realtime Parameter Inversion & Dynamic Control Deck -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        
+        <!-- Closed Loop Input Slider Controls -->
+        <div class="glass-card rounded-xl p-4 space-y-4 border border-slate-800">
+          <div class="flex items-center space-x-2 text-xs font-bold text-white uppercase tracking-wider font-mono-code">
+            <i data-lucide="sliders" class="w-4 h-4 text-cyan-400"></i>
+            <span>Environmental & Tribo Injectors</span>
+          </div>
+
+          <!-- Slider 1: Guide Rail Triboelectric Coefficient -->
+          <div class="space-y-1">
+            <div class="flex justify-between text-xs font-mono-code">
+              <span class="text-slate-400">Guide Friction Coeff ($\mu_{\text{tribo}}$):</span>
+              <span id="lblFriction" class="text-cyan-400">0.38</span>
+            </div>
+            <input id="sliderFriction" type="range" min="0.10" max="0.95" step="0.01" value="0.38" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-400" oninput="updateSliders()">
+            <div class="flex justify-between text-[10px] text-slate-400 font-mono-code">
+              <span>Dry Ti-6Al-4V</span>
+              <span>Anodized Al-7075</span>
+            </div>
+          </div>
+
+          <!-- Slider 2: Cold-Gas RCS Plume Impingement Density -->
+          <div class="space-y-1">
+            <div class="flex justify-between text-xs font-mono-code">
+              <span class="text-slate-400">Cold-Gas Plume Density ($n_g$):</span>
+              <span id="lblPlume" class="text-cyan-400">$2.4 \times 10^{18}\text{ m}^{-3}$</span>
+            </div>
+            <input id="sliderPlume" type="range" min="0.5" max="8.0" step="0.1" value="2.4" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-400" oninput="updateSliders()">
+            <div class="flex justify-between text-[10px] text-slate-400 font-mono-code">
+              <span>Minimal Purge</span>
+              <span>Full Attitude Divert</span>
+            </div>
+          </div>
+
+          <!-- Slider 3: Separation Spring Acceleration Force -->
+          <div class="space-y-1">
+            <div class="flex justify-between text-xs font-mono-code">
+              <span class="text-slate-400">Pusher Spring Velocity Impulse ($v_0$):</span>
+              <span id="lblImpulse" class="text-cyan-400">1.85 m/s</span>
+            </div>
+            <input id="sliderImpulse" type="range" min="0.5" max="4.0" step="0.05" value="1.85" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-400" oninput="updateSliders()">
+            <div class="flex justify-between text-[10px] text-slate-400 font-mono-code">
+              <span>Soft Push (0.5 m/s)</span>
+              <span>Rapid Eject (4.0 m/s)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Fault Injection Matrix -->
+        <div class="glass-card rounded-xl p-4 space-y-4 border border-slate-800">
+          <div class="flex items-center space-x-2 text-xs font-bold text-white uppercase tracking-wider font-mono-code">
+            <i data-lucide="flame" class="w-4 h-4 text-amber-400"></i>
+            <span>Staging Hazard Stress Testing</span>
+          </div>
+
+          <p class="text-xs text-slate-400 leading-relaxed">
+            Inject realistic orbital staging anomalies to observe whether passive bonding wires fail and if active field-emission bleeds can prevent premature pyrotechnic detonation.
+          </p>
+
+          <div class="grid grid-cols-2 gap-2 pt-1">
+            <button onclick="injectFault('bondingBreak')" class="p-2.5 rounded-lg bg-slate-900 hover:bg-rose-950/60 border border-slate-800 hover:border-rose-700/50 text-left transition group">
+              <div class="text-[11px] font-bold text-slate-300 group-hover:text-rose-400 font-mono-code flex items-center justify-between">
+                <span>Bonding Strap Snap</span>
+                <i data-lucide="scissors" class="w-3 h-3 text-slate-400 group-hover:text-rose-400"></i>
+              </div>
+              <div class="text-[10px] text-slate-400 mt-1">Ground strap tears during push off</div>
+            </button>
+
+            <button onclick="injectFault('plumeSpike')" class="p-2.5 rounded-lg bg-slate-900 hover:bg-amber-950/60 border border-slate-800 hover:border-amber-700/50 text-left transition group">
+              <div class="text-[11px] font-bold text-slate-300 group-hover:text-amber-400 font-mono-code flex items-center justify-between">
+                <span>RCS Plume Burst</span>
+                <i data-lucide="wind" class="w-3 h-3 text-slate-400 group-hover:text-amber-400"></i>
+              </div>
+              <div class="text-[10px] text-slate-400 mt-1">Direct cold-gas impingement on bolts</div>
+            </button>
+
+            <button onclick="injectFault('guideGalling')" class="p-2.5 rounded-lg bg-slate-900 hover:bg-amber-950/60 border border-slate-800 hover:border-amber-700/50 text-left transition group">
+              <div class="text-[11px] font-bold text-slate-300 group-hover:text-amber-400 font-mono-code flex items-center justify-between">
+                <span>Collet Galling</span>
+                <i data-lucide="alert-triangle" class="w-3 h-3 text-slate-400 group-hover:text-amber-400"></i>
+              </div>
+              <div class="text-[10px] text-slate-400 mt-1">Cold-welding friction generates 10x charge</div>
+            </button>
+
+            <button onclick="injectFault('nominalSafe')" class="p-2.5 rounded-lg bg-slate-900 hover:bg-emerald-950/60 border border-slate-800 hover:border-emerald-700/50 text-left transition group">
+              <div class="text-[11px] font-bold text-slate-300 group-hover:text-emerald-400 font-mono-code flex items-center justify-between">
+                <span>Restore Baseline</span>
+                <i data-lucide="check" class="w-3 h-3 text-slate-400 group-hover:text-emerald-400"></i>
+              </div>
+              <div class="text-[10px] text-slate-400 mt-1">Nominal gold-plated collet guide rails</div>
+            </button>
+          </div>
+        </div>
+
+        <!-- Telemetry History Chart (Secondary Diagnostic) -->
+        <div class="glass-card rounded-xl p-4 flex flex-col justify-between border border-slate-800">
+          <div class="flex items-center justify-between pb-2 border-b border-slate-800/80">
+            <div class="flex items-center space-x-2">
+              <i data-lucide="line-chart" class="w-4 h-4 text-purple-400"></i>
+              <span class="text-xs font-bold text-white uppercase tracking-wider font-mono-code">Charge & Neutralizer History</span>
+            </div>
+            <span class="text-[10px] font-mono-code text-slate-400">Rolling 40 Ticks</span>
+          </div>
+          
+          <div class="relative w-full h-[155px] mt-2">
+            <canvas id="timeSeriesChart"></canvas>
+          </div>
+
+          <div class="mt-2 text-[10px] font-mono-code flex items-center justify-between text-slate-400">
+            <div class="flex items-center space-x-1">
+              <span class="inline-block w-2 h-0.5 bg-cyan-400"></span>
+              <span>Charge $Q$ (nC)</span>
+            </div>
+            <div class="flex items-center space-x-1">
+              <span class="inline-block w-2 h-0.5 bg-purple-400"></span>
+              <span>Bleed Current ($\mu\text{A}$)</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- TAB 2: CORE PHYSICS & MATHEMATICAL MODEL (#viewPhysics)                  -->
+    <!-- ========================================================================= -->
+    <div id="viewPhysics" class="hidden space-y-6">
+      
+      <!-- Section Header -->
+      <div class="border-b border-slate-800 pb-4">
+        <h2 class="text-xl sm:text-2xl font-bold text-white tracking-tight flex items-center gap-2">
+          <i data-lucide="atom" class="w-6 h-6 text-cyan-400"></i>
+          <span>Triboelectric Staging Dynamics & Electro-Explosive Safety</span>
+        </h2>
+        <p class="text-sm text-slate-400 mt-1">
+          Rigorous physical and mathematical framework governing high-vacuum contact charging, capacitive spark transition, and active micro-plasma neutralization.
+        </p>
+      </div>
+
+      <!-- 4 Technical Physics Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+        <!-- Card 1: Triboelectric Kinetic Charging in Vacuum -->
+        <div class="glass-card rounded-2xl p-5 border border-slate-800 space-y-3">
+          <div class="flex items-center space-x-2 text-cyan-400 font-semibold font-mono-code text-sm">
+            <span class="px-2 py-0.5 rounded bg-cyan-950/80 border border-cyan-800/60 text-xs text-cyan-300">01</span>
+            <h3>Vacuum Contact Tribocharging Mechanics</h3>
+          </div>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            During lunar lander mechanical staging, guide collets slide against matching rails while attitude cold-gas thruster plumes impinge on dielectric thermal blankets. Charge generation is governed by the contact potential difference $\Delta V_{CPD}$ and frictional energy dissipation:
+          </p>
+
+          <div class="formula-box">
+            $$\frac{dQ_{\text{tribo}}}{dt} = \alpha_t \cdot \varepsilon_0 \cdot \left(\frac{\Phi_{\text{lander}} - \Phi_{\text{guide}}}{e}\right) \cdot \mu_f \cdot F_N \cdot v(t) + \eta_p \cdot j_{\text{plume}} \cdot A_{\text{imp}}$$
+          </div>
+
+          <p class="text-xs text-slate-400 leading-relaxed">
+            Where $\Phi$ represents the work functions of titanium/aluminum contact alloys, $\mu_f$ is the dynamic friction coefficient under lunar hard vacuum ($10^{-11}\text{ Torr}$), $F_N$ is the guide pin normal reaction force, and $v(t)$ is separation velocity. Under vacuum, lack of atmospheric moisture prevents spontaneous gas ionization discharge, allowing surface charges to escalate to tens of kilovolts.
+          </p>
+        </div>
+
+        <!-- Card 2: Pyrotechnic Initiator (NSI) Spark Ignition Threshold -->
+        <div class="glass-card rounded-2xl p-5 border border-slate-800 space-y-3">
+          <div class="flex items-center space-x-2 text-rose-400 font-semibold font-mono-code text-sm">
+            <span class="px-2 py-0.5 rounded bg-rose-950/80 border border-rose-800/60 text-xs text-rose-300">02</span>
+            <h3>NASA Standard Initiator (NSI) Spark Breakdown</h3>
+          </div>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            Separation ordnance (frangible nuts, explosive bolts) relies on NASA Standard Initiators (NSI). The bridging bridgewire is protected against DC currents below 1.0 A / 1.0 W, but is acutely vulnerable to pin-to-case electrostatic discharge (ESD) transients when accumulated electrostatic energy exceeds critical activation thresholds:
+          </p>
+
+          <div class="formula-box">
+            $$\mathcal{E}_{\text{spark}} = \frac{Q^2}{2 C_{\text{gap}}} \ge \mathcal{E}_{\text{crit}} \quad \left[\text{where } \mathcal{E}_{\text{crit}} \approx 25.0 \text{ mJ at } V_{\text{breakdown}} \ge 2.5 \text{ kV}\right]$$
+          </div>
+
+          <p class="text-xs text-slate-400 leading-relaxed">
+            If a localized charge differential $Q(t)$ across mechanical collets arcs across the EED structural ground return path, the instantaneous $\frac{dI}{dt}$ induces a localized thermal hotspot within the zirconium potassium perchlorate (ZPP) pyrotechnic mix, triggering uncommanded structural separation.
+          </p>
+        </div>
+
+        <!-- Card 3: Realtime (v, Q) Gradient Observer & Hazard Boundary -->
+        <div class="glass-card rounded-2xl p-5 border border-slate-800 space-y-3">
+          <div class="flex items-center space-x-2 text-amber-400 font-semibold font-mono-code text-sm">
+            <span class="px-2 py-0.5 rounded bg-amber-950/80 border border-amber-800/60 text-xs text-amber-300">03</span>
+            <h3>Diagnostic State Observer & Inversion Algorithm</h3>
+          </div>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            The PyroDischarge flight avionics continuously samples contactless non-invasive capacitive sensing plates embedded within separation guide tracks. The autonomous state estimator computes the normalized differential charging gradient relative to instant separation kinematics:
+          </p>
+
+          <div class="formula-box">
+            $$\Gamma_{\text{risk}} = \frac{\nabla_v Q}{\beta_{\text{nominal}}} = \frac{\partial Q / \partial v}{\kappa_0 \cdot \left[1 + \gamma \cdot \ln(1 + v/v_{\text{ref}})\right]}$$
+          </div>
+
+          <p class="text-xs text-slate-400 leading-relaxed">
+            If $\Gamma_{\text{risk}} \ge 1.0$, the charge accumulation accelerates faster than mechanical clearance can dissipate it. The closed-loop controller intercepts the trajectory before reaching the catastrophic Paschen spark limit in lunar outgassing pockets.
+          </p>
+        </div>
+
+        <!-- Card 4: Field-Emission Active Plasma Neutralization -->
+        <div class="glass-card rounded-2xl p-5 border border-slate-800 space-y-3">
+          <div class="flex items-center space-x-2 text-purple-400 font-semibold font-mono-code text-sm">
+            <span class="px-2 py-0.5 rounded bg-purple-950/80 border border-purple-800/60 text-xs text-purple-300">04</span>
+            <h3>Active Plasma Sentry Bleed Dynamics</h3>
+          </div>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            Upon detection of an anomalous charging gradient ($\Gamma_{\text{risk}} > 0.82$), PyroDischarge energizes solid-state field-emission cathode arrays (FEA), firing a micro-ampere neutralizing plasma sheath into the separation boundary layer:
+          </p>
+
+          <div class="formula-box">
+            $$I_{\text{bleed}} = A_{\text{emitter}} \cdot a \cdot E^2 \exp\left(-\frac{b \cdot \phi^{3/2}}{E}\right) + I_{\text{xenon}} \cdot \left(1 - e^{-t/\tau_{\text{plasma}}}\right)$$
+          </div>
+
+          <p class="text-xs text-slate-400 leading-relaxed">
+            By establishing an artificial conductive micro-plasma path, excess spacecraft electrons are bled into the free lunar vacuum sheath at $45\text{ }\mu\text{s}$ latency, clamping collet voltage strictly below 150 V and suppressing arc formation.
+          </p>
+        </div>
+
+      </div>
+
+      <!-- Hardware & Substrate Implementation Specifications -->
+      <div class="glass-card rounded-2xl p-5 border border-slate-800">
+        <h3 class="text-sm font-bold text-white uppercase tracking-wider font-mono-code mb-3 flex items-center gap-2">
+          <i data-lucide="cpu" class="w-4 h-4 text-cyan-400"></i>
+          <span>Flight Substrate & Radiation-Hardened Sensor Specifications</span>
+        </h3>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs font-mono-code">
+          <div class="p-3 rounded-lg bg-slate-950/80 border border-slate-900">
+            <span class="text-slate-400 block text-[10px]">ELECTROMETER SUBSTRATE</span>
+            <span class="text-cyan-300 font-semibold">AlN Ceramic / Polyimide</span>
+          </div>
+          <div class="p-3 rounded-lg bg-slate-950/80 border border-slate-900">
+            <span class="text-slate-400 block text-[10px]">CHARGE RESOLUTION</span>
+            <span class="text-cyan-300 font-semibold">&plusmn; 0.05 nC Full Scale</span>
+          </div>
+          <div class="p-3 rounded-lg bg-slate-950/80 border border-slate-900">
+            <span class="text-slate-400 block text-[10px]">TID RAD HARDNESS</span>
+            <span class="text-cyan-300 font-semibold">&gt; 100 krad (Si)</span>
+          </div>
+          <div class="p-3 rounded-lg bg-slate-950/80 border border-slate-900">
+            <span class="text-slate-400 block text-[10px]">SYSTEM RESPONSE TIME</span>
+            <span class="text-cyan-300 font-semibold">&le; 45 Microseconds</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- TAB 3: $225k NASA SBIR/STTR PROPOSAL & HARDWARE TRANSITION (#viewProposal) -->
+    <!-- ========================================================================= -->
+    <div id="viewProposal" class="hidden space-y-6">
+      
+      <!-- Solicitation Banner -->
+      <div class="glass-card rounded-2xl p-6 border border-cyan-500/30 relative overflow-hidden">
+        <div class="absolute -right-8 -bottom-8 w-48 h-48 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <div class="flex items-center space-x-2">
+              <span class="px-2.5 py-0.5 rounded-full text-xs font-mono-code bg-cyan-950 text-cyan-300 border border-cyan-800">NASA STTR 2026 Phase I Solicitation</span>
+              <span class="px-2.5 py-0.5 rounded-full text-xs font-mono-code bg-purple-950 text-purple-300 border border-purple-800">Topic: T04.02-6102</span>
+            </div>
+            <h2 class="text-xl sm:text-2xl font-bold text-white mt-2">Electrostatic Discharge Mitigation for Human Landing System (HLS) Staging</h2>
+            <p class="text-xs sm:text-sm text-slate-300 mt-1 max-w-3xl">
+              A comprehensive 6-month dual-path research initiative validating non-contact tribocharge sensing and autonomous active micro-plasma charge neutralization during lunar descent stage separation.
+            </p>
+          </div>
+          <div class="text-right">
+            <div class="text-xs font-mono-code text-slate-400">TOTAL PHASE I AWARD</div>
+            <div class="text-2xl sm:text-3xl font-extrabold font-mono-code text-cyan-400">$225,000</div>
+            <div class="text-[11px] font-mono-code text-emerald-400">Firm-Fixed Price (6 Mos)</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Partner & Subcontract Allocation: UCF 30% STTR Focus -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        
+        <div class="glass-card rounded-2xl p-5 border border-slate-800 space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-mono-code text-cyan-400 uppercase font-semibold">Prime Contractor</span>
+            <i data-lucide="shield" class="w-4 h-4 text-cyan-400"></i>
+          </div>
+          <h3 class="text-base font-bold text-white">PyroDischarge Avionics Corp</h3>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            Lead software development, real-time edge observer state machine, radiation-hardened FPGA core integration, and overall payload systems engineering.
+          </p>
+          <div class="pt-2 border-t border-slate-800 text-xs font-mono-code flex justify-between">
+            <span class="text-slate-400">Phase I Direct:</span>
+            <span class="text-white font-bold">$157,500 (70.0%)</span>
+          </div>
+        </div>
+
+        <div class="glass-card rounded-2xl p-5 border border-amber-500/30 space-y-3 relative">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-mono-code text-amber-400 uppercase font-semibold">STTR Research Partner (30%)</span>
+            <i data-lucide="landmark" class="w-4 h-4 text-amber-400"></i>
+          </div>
+          <h3 class="text-base font-bold text-white">University of Central Florida (UCF)</h3>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            Center for Advanced Turbomachinery and Energy Research (CATER) & Exolith Lunar Simulation Lab. High-vacuum chamber tribological testing and plasma sheath verification.
+          </p>
+          <div class="pt-2 border-t border-slate-800 text-xs font-mono-code flex justify-between">
+            <span class="text-slate-400">Mandatory STTR Subcontract:</span>
+            <span class="text-amber-400 font-bold">$67,500 (30.0%)</span>
+          </div>
+        </div>
+
+        <div class="glass-card rounded-2xl p-5 border border-slate-800 space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-mono-code text-emerald-400 uppercase font-semibold">NASA Alignment</span>
+            <i data-lucide="compass" class="w-4 h-4 text-emerald-400"></i>
+          </div>
+          <h3 class="text-base font-bold text-white">Artemis HLS / Gateway</h3>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            Direct insertion into Artemis Descent-to-Ascent Stage Separation Collets, Cargo Lander Staging Rings, and Autonomous Lunar Surface Hab Landing interfaces.
+          </p>
+          <div class="pt-2 border-t border-slate-800 text-xs font-mono-code flex justify-between">
+            <span class="text-slate-400">Target Readiness:</span>
+            <span class="text-emerald-400 font-bold">TRL 3 $\rightarrow$ TRL 5/6</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Work Breakdown Structure (Months 1–6) -->
+      <div class="glass-card rounded-2xl p-6 border border-slate-800 space-y-4">
+        <h3 class="text-sm font-bold text-white uppercase tracking-wider font-mono-code flex items-center gap-2">
+          <i data-lucide="calendar" class="w-4 h-4 text-cyan-400"></i>
+          <span>Phase I Milestone Roadmap & Deliverables (Months 1–6)</span>
+        </h3>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          
+          <div class="p-4 rounded-xl bg-slate-950/70 border border-slate-900 space-y-2">
+            <div class="flex items-center justify-between text-xs font-mono-code">
+              <span class="text-cyan-400 font-bold">MILESTONE 1</span>
+              <span class="text-slate-400">Months 1–2</span>
+            </div>
+            <h4 class="text-sm font-semibold text-white">Triboelectric Kinetic Characterization</h4>
+            <p class="text-xs text-slate-400 leading-relaxed">
+              Validate contact charge models in UCF ultra-high vacuum chamber ($10^{-9}\text{ Torr}$) utilizing titanium guide collets and composite skins.
+            </p>
+            <div class="text-[11px] font-mono-code text-slate-300 pt-1 border-t border-slate-900">
+              Deliverable: High-Vacuum Empirical Tribo Matrix.
+            </div>
+          </div>
+
+          <div class="p-4 rounded-xl bg-slate-950/70 border border-slate-900 space-y-2">
+            <div class="flex items-center justify-between text-xs font-mono-code">
+              <span class="text-cyan-400 font-bold">MILESTONE 2</span>
+              <span class="text-slate-400">Months 2–3</span>
+            </div>
+            <h4 class="text-sm font-semibold text-white">Observer State Machine Inversion</h4>
+            <p class="text-xs text-slate-400 leading-relaxed">
+              Synthesize edge-computable $(v, Q)$ trajectory tracking algorithms in C/C++ with deterministic execution on microsemi RTG4 radiation-tolerant FPGAs.
+            </p>
+            <div class="text-[11px] font-mono-code text-slate-300 pt-1 border-t border-slate-900">
+              Deliverable: Embedded RT-Observer Binary & SIL Suite.
+            </div>
+          </div>
+
+          <div class="p-4 rounded-xl bg-slate-950/70 border border-slate-900 space-y-2">
+            <div class="flex items-center justify-between text-xs font-mono-code">
+              <span class="text-cyan-400 font-bold">MILESTONE 3</span>
+              <span class="text-slate-400">Months 4–5</span>
+            </div>
+            <h4 class="text-sm font-semibold text-white">Closed-Loop Sentry Plasma Discharge</h4>
+            <p class="text-xs text-slate-400 leading-relaxed">
+              Integrate solid-state field emission arrays with sensor feedback loop, proving spark suppression across 50 simulated staging abort sequences.
+            </p>
+            <div class="text-[11px] font-mono-code text-slate-300 pt-1 border-t border-slate-900">
+              Deliverable: Subscale Hardware Vacuum Arc-Quenching Demo.
+            </div>
+          </div>
+
+          <div class="p-4 rounded-xl bg-slate-950/70 border border-slate-900 space-y-2">
+            <div class="flex items-center justify-between text-xs font-mono-code">
+              <span class="text-cyan-400 font-bold">MILESTONE 4</span>
+              <span class="text-slate-400">Month 6</span>
+            </div>
+            <h4 class="text-sm font-semibold text-white">Phase II Transition Architecture</h4>
+            <p class="text-xs text-slate-400 leading-relaxed">
+              Finalize flight envelope specs for NASA Human Landing System primes, complete flight-like avionics enclosure drawings, and Phase II STTR proposal.
+            </p>
+            <div class="text-[11px] font-mono-code text-slate-300 pt-1 border-t border-slate-900">
+              Deliverable: Comprehensive Final Report & Phase II Plan.
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Phase II Transition & Facility Capabilities -->
+      <div class="glass-card rounded-2xl p-6 border border-slate-800 space-y-3">
+        <h3 class="text-sm font-bold text-white uppercase tracking-wider font-mono-code flex items-center gap-2">
+          <i data-lucide="rocket" class="w-4 h-4 text-purple-400"></i>
+          <span>Phase II Transition Plan ($850,000–$1,200,000)</span>
+        </h3>
+        <p class="text-xs sm:text-sm text-slate-300 leading-relaxed">
+          Phase II will transition subscale vacuum prototypes to full-scale flight qualified separation rings. Testing will leverage UCF's large-scale vacuum facilities and collaborate with commercial lunar payload service (CLPS) providers to conduct on-orbit staging demonstration flights by late 2028.
+        </p>
+      </div>
+
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- TAB 4: COMMERCIAL & NATIONWIDE ARR BREAKDOWN (#viewARR)                  -->
+    <!-- ========================================================================= -->
+    <div id="viewARR" class="hidden space-y-6">
+      
+      <!-- Executive Summary Card -->
+      <div class="glass-card rounded-2xl p-6 border border-emerald-500/30 relative overflow-hidden">
+        <div class="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <span class="text-xs font-mono-code px-2.5 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-800">
+              Commercial & Civil Defense TAM
+            </span>
+            <h2 class="text-xl sm:text-2xl font-bold text-white mt-2">Nationwide Civil ARR Potential: $214.2M / Year</h2>
+            <p class="text-xs sm:text-sm text-slate-300 mt-1 max-w-3xl">
+              Preventing catastrophic spark-induced pyrotechnic discharges, fuel line ignitions, and dielectric punch-through across civil aerospace, space logistics, clean energy, and high-vacuum manufacturing.
+            </p>
+          </div>
+          <div class="text-right">
+            <div class="text-xs font-mono-code text-slate-400">ENTERPRISE SOFTWARE VALUATION</div>
+            <div class="text-2xl sm:text-3xl font-extrabold font-mono-code text-emerald-400">$1.71B – $2.57B</div>
+            <div class="text-[11px] font-mono-code text-slate-400">Based on 8x–12x Deep-Tech ARR Multiple</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ARR Distribution Table -->
+      <div class="glass-card rounded-2xl overflow-hidden border border-slate-800">
+        <div class="p-4 border-b border-slate-800 flex items-center justify-between">
+          <div class="flex items-center space-x-2">
+            <i data-lucide="table" class="w-4 h-4 text-cyan-400"></i>
+            <h3 class="text-sm font-semibold text-white uppercase tracking-wider font-mono-code">Civil Vertical Market Breakdown</h3>
+          </div>
+          <span class="text-xs font-mono-code text-slate-400">6 Scalable Sectors</span>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs font-mono-code">
+            <thead class="bg-slate-950/80 text-slate-400 border-b border-slate-800">
+              <tr>
+                <th class="p-3.5">Target Civil Vertical</th>
+                <th class="p-3.5">Specific Safety Critical Application</th>
+                <th class="p-3.5">Pricing Model & Annual Rate</th>
+                <th class="p-3.5">Addressable Asset Base</th>
+                <th class="p-3.5 text-right text-emerald-400">Mature ARR</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-800/60 text-slate-300">
+              <tr class="hover:bg-slate-900/40 transition">
+                <td class="p-3.5 font-bold text-white flex items-center gap-2">
+                  <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
+                  Commercial Launch Vehicles
+                </td>
+                <td class="p-3.5">Orbital fairing & interstage separation bolt protection</td>
+                <td class="p-3.5">$180,000 / flight license</td>
+                <td class="p-3.5">280 orbital flights / yr</td>
+                <td class="p-3.5 text-right font-bold text-white">$50.4M</td>
+              </tr>
+              <tr class="hover:bg-slate-900/40 transition">
+                <td class="p-3.5 font-bold text-white flex items-center gap-2">
+                  <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                  Commercial Lunar Cargo (CLPS)
+                </td>
+                <td class="p-3.5">Descent lander and rover release collet sentries</td>
+                <td class="p-3.5">$350,000 / mission core</td>
+                <td class="p-3.5">48 planetary flights / yr</td>
+                <td class="p-3.5 text-right font-bold text-white">$16.8M</td>
+              </tr>
+              <tr class="hover:bg-slate-900/40 transition">
+                <td class="p-3.5 font-bold text-white flex items-center gap-2">
+                  <span class="w-2 h-2 rounded-full bg-purple-400"></span>
+                  Semiconductor EUV Cleanrooms
+                </td>
+                <td class="p-3.5">High-vacuum reticle stage ESD arc suppression</td>
+                <td class="p-3.5">$65,000 / tool / yr SaaS</td>
+                <td class="p-3.5">920 operating EUV litho tools</td>
+                <td class="p-3.5 text-right font-bold text-white">$59.8M</td>
+              </tr>
+              <tr class="hover:bg-slate-900/40 transition">
+                <td class="p-3.5 font-bold text-white flex items-center gap-2">
+                  <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+                  Civil Hydrogen Aviation
+                </td>
+                <td class="p-3.5">Cryogenic disconnect spark sentry during refueling</td>
+                <td class="p-3.5">$12,000 / fuel port / yr</td>
+                <td class="p-3.5">3,200 commercial hubs</td>
+                <td class="p-3.5 text-right font-bold text-white">$38.4M</td>
+              </tr>
+              <tr class="hover:bg-slate-900/40 transition">
+                <td class="p-3.5 font-bold text-white flex items-center gap-2">
+                  <span class="w-2 h-2 rounded-full bg-sky-400"></span>
+                  Space Station Docking Rings
+                </td>
+                <td class="p-3.5">Commercial LEO and Gateway soft-docking discharge</td>
+                <td class="p-3.5">$480,000 / ring module</td>
+                <td class="p-3.5">52 active international rings</td>
+                <td class="p-3.5 text-right font-bold text-white">$25.0M</td>
+              </tr>
+              <tr class="hover:bg-slate-900/40 transition">
+                <td class="p-3.5 font-bold text-white flex items-center gap-2">
+                  <span class="w-2 h-2 rounded-full bg-rose-400"></span>
+                  High-Altitude Drone Staging
+                </td>
+                <td class="p-3.5">Atmospheric balloon payload drogue separation ESD</td>
+                <td class="p-3.5">$19,000 / platform / yr</td>
+                <td class="p-3.5">1,250 stratospheric nodes</td>
+                <td class="p-3.5 text-right font-bold text-white">$23.8M</td>
+              </tr>
+            </tbody>
+            <tfoot class="bg-slate-950 font-bold text-white border-t border-slate-700">
+              <tr>
+                <td colspan="4" class="p-3.5 text-right uppercase text-slate-400">Total Addressable Mature Civil ARR:</td>
+                <td class="p-3.5 text-right text-emerald-400 text-sm font-mono-code">$214.2M</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+
+      <!-- Detailed Vertical Deep Dives: Plain English & Physics -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+        <div class="glass-card rounded-2xl p-5 border border-slate-800 space-y-3">
+          <div class="flex items-center space-x-2 text-cyan-400 font-bold text-xs font-mono-code">
+            <i data-lucide="orbit" class="w-4 h-4"></i>
+            <span>Commercial Space Launch</span>
+          </div>
+          <div class="text-xs space-y-2">
+            <div>
+              <span class="text-slate-400 block font-semibold">Physics in 1 Sentence:</span>
+              <p class="text-slate-300">
+                Pneumatic and pyrotechnic pushers generate rapid tribocharges that exceed the Paschen breakdown voltage in expanding stage-separation gas bubbles.
+              </p>
+            </div>
+            <div>
+              <span class="text-slate-400 block font-semibold">Why Others Missed This (Plain English):</span>
+              <p class="text-slate-300">
+                Incumbents assumed passive braided bonding straps were sufficient, ignoring that high-speed mechanical release fractures or stretches straps before total voltage neutralization occurs.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="glass-card rounded-2xl p-5 border border-slate-800 space-y-3">
+          <div class="flex items-center space-x-2 text-purple-400 font-bold text-xs font-mono-code">
+            <i data-lucide="cpu" class="w-4 h-4"></i>
+            <span>Semiconductor EUV Tooling</span>
+          </div>
+          <div class="text-xs space-y-2">
+            <div>
+              <span class="text-slate-400 block font-semibold">Physics in 1 Sentence:</span>
+              <p class="text-slate-300">
+                Sub-nanometer magnetic levitation stages traversing high vacuum induce localized charge accumulation on quartz photomasks, triggering lethal micro-arcs.
+              </p>
+            </div>
+            <div>
+              <span class="text-slate-400 block font-semibold">Why Others Missed This (Plain English):</span>
+              <p class="text-slate-300">
+                Foundries rely on passive ionizing nitrogen blowers, which are completely inoperable inside extreme high-vacuum EUV scanner chambers where no gas medium exists.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="glass-card rounded-2xl p-5 border border-slate-800 space-y-3">
+          <div class="flex items-center space-x-2 text-amber-400 font-bold text-xs font-mono-code">
+            <i data-lucide="fuel" class="w-4 h-4"></i>
+            <span>Civil Liquid Hydrogen Fueling</span>
+          </div>
+          <div class="text-xs space-y-2">
+            <div>
+              <span class="text-slate-400 block font-semibold">Physics in 1 Sentence:</span>
+              <p class="text-slate-300">
+                Ultra-cold liquid $H_2$ flowing through Teflon and metallic disconnect couplings generates thousands of volts of static charge right beside combustible boiloff gas.
+              </p>
+            </div>
+            <div>
+              <span class="text-slate-400 block font-semibold">Why Others Missed This (Plain English):</span>
+              <p class="text-slate-300">
+                Standard operators use manual grounding clamp cables, which are frequently clipped over oxidized or painted fixtures that maintain dangerously high contact resistance.
+              </p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Investor / Collaboration Callout -->
+      <div class="glass-card rounded-2xl p-6 border border-slate-800 text-center space-y-3">
+        <h3 class="text-lg font-bold text-white">Direct Aerospace Licensing & Prime Inquiries</h3>
+        <p class="text-xs sm:text-sm text-slate-400 max-w-xl mx-auto">
+          PyroDischarge is currently scheduling flight heritage demonstration slots for late 2027 and 2028 commercial orbital logistics launches.
+        </p>
+        <div class="pt-2">
+          <a href="mailto:support@rfwavecode.com" class="inline-flex items-center space-x-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-cyan-600 to-sky-600 hover:from-cyan-500 hover:to-sky-500 text-white font-mono-code font-semibold text-xs transition shadow-[0_0_20px_rgba(6,182,212,0.3)]">
+            <i data-lucide="mail" class="w-4 h-4"></i>
+            <span>Contact Program Director: support@rfwavecode.com</span>
+          </a>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- Global Footer -->
+  <footer class="border-t border-slate-900 bg-[#020408] py-4 text-center text-xs text-slate-400 font-mono-code">
+    <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+      <div>PyroDischarge &copy; 2026. All Rights Reserved. Prepared for NASA STTR Solicitation.</div>
+      <div class="text-slate-400">Contact: <a href="mailto:support@rfwavecode.com" class="text-cyan-400 hover:underline">support@rfwavecode.com</a></div>
+    </div>
+  </footer>
+
+  <!-- ========================================================================= -->
+  <!-- JAVASCRIPT APPLICATION CORE: SIMULATION, CHARTS, & STATE OBSERVER         -->
+  <!-- ========================================================================= -->
+  <script>
+    // Tab Switching Architecture Mapping
+    const tabMapping = {
+      'sim': { viewId: 'viewSim', btnId: 'tabBtnSim' },
+      'physics': { viewId: 'viewPhysics', btnId: 'tabBtnPhysics' },
+      'proposal': { viewId: 'viewProposal', btnId: 'tabBtnProposal' },
+      'arr': { viewId: 'viewARR', btnId: 'tabBtnARR' }
+    };
+
+    function switchTab(targetKey) {
+      Object.keys(tabMapping).forEach(key => {
+        const item = tabMapping[key];
+        const viewEl = document.getElementById(item.viewId);
+        const btnEl = document.getElementById(item.btnId);
+
+        if (key === targetKey) {
+          viewEl.classList.remove('hidden');
+          btnEl.className = "flex items-center space-x-2 px-4 py-2 text-xs sm:text-sm font-medium rounded-lg text-cyan-400 bg-cyan-950/40 border border-cyan-500/30 transition shadow-[0_0_10px_rgba(6,182,212,0.1)]";
+        } else {
+          viewEl.classList.add('hidden');
+          btnEl.className = "flex items-center space-x-2 px-4 py-2 text-xs sm:text-sm font-medium rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 transition";
+        }
+      });
+
+      // Immediate MathJax re-render to avoid formula clipping
+      if (window.MathJax && window.MathJax.typesetPromise) {
+        window.MathJax.typesetPromise();
+      }
+
+      // Re-trigger layout sizing if returning to simulator
+      if (targetKey === 'sim') {
+        setTimeout(() => {
+          resizeCanvas();
+          if (phaseChart) phaseChart.resize();
+          if (timeChart) timeChart.resize();
+        }, 50);
+      }
+    }
+
+    // =========================================================================
+    // Simulation Physics State Variables
+    // =========================================================================
+    let simState = {
+      active: false,
+      separated: false,
+      distance: 0.0, // separation displacement (meters)
+      velocity: 0.0, // relative velocity (m/s)
+      charge: 0.0,   // accumulated charge (nC)
+      bleedCurrent: 0.0, // microamps
+      sentryAutonomous: true,
+      faultType: 'none', // 'bondingBreak', 'plumeSpike', 'guideGalling', 'none'
+      
+      // Physical Tunables from Sliders
+      frictionCoeff: 0.38,
+      plumeDensity: 2.4, // x 10^18 m^-3
+      impulseForce: 1.85, // m/s
+      
+      // Telemetry Arrays
+      historyTicks: 0,
+      phaseTraj: [],
+      timeSeriesQ: [],
+      timeSeriesBleed: []
+    };
+
+    // Particles for Visual Canvas
+    let particles = [];
+
+    // =========================================================================
+    // Canvas Engine Setup (High DPI Aware)
+    // =========================================================================
+    const canvas = document.getElementById('separationCanvas');
+    const ctx = canvas.getContext('2d');
+
+    function resizeCanvas() {
+      const rect = canvas.getBoundingClientRect();
+      const w = rect.width || 600;
+      const h = rect.height || 340;
+      const dpr = window.devicePixelRatio || 1;
+      
+      canvas.width = w * dpr;
+      canvas.height = h * dpr;
+      ctx.resetTransform();
+      ctx.scale(dpr, dpr);
+    }
+
+    window.addEventListener('resize', () => {
+      resizeCanvas();
+    });
+
+    // =========================================================================
+    // Chart.js Phase Space (Q vs. v) and Time Series Charts
+    // =========================================================================
+    let phaseChart = null;
+    let timeChart = null;
+
+    function initCharts() {
+      // 1. Phase Space Chart: X = Charge Q (nC), Y = Relative Velocity v (m/s)
+      const ctxPhase = document.getElementById('phaseSpaceChart').getContext('2d');
+      
+      // Calculate Nominal Corridor & Hazard Curve
+      const nominalPoints = [];
+      const hazardPoints = [];
+      for (let v = 0; v <= 4.0; v += 0.2) {
+        // Nominal curve: Q = 3.5 * v^1.2
+        const qNom = 3.5 * Math.pow(v, 1.2);
+        nominalPoints.push({ x: qNom, y: v });
+
+        // Critical Spark Boundary: Q_crit = 16.0 + 8.0 * v^1.1
+        const qCrit = 16.0 + 8.0 * Math.pow(v, 1.1);
+        hazardPoints.push({ x: qCrit, y: v });
+      }
+
+      phaseChart = new Chart(ctxPhase, {
+        type: 'scatter',
+        data: {
+          datasets: [
+            {
+              label: 'Lethal ESD Spark Boundary',
+              data: hazardPoints,
+              showLine: true,
+              borderColor: 'rgba(239, 68, 68, 0.85)',
+              borderWidth: 2,
+              borderDash: [6, 4],
+              pointRadius: 0,
+              fill: {
+                target: 'end',
+                above: 'rgba(239, 68, 68, 0.12)'
+              }
+            },
+            {
+              label: 'Nominal Staging Corridor',
+              data: nominalPoints,
+              showLine: true,
+              borderColor: 'rgba(56, 189, 248, 0.7)',
+              borderWidth: 2,
+              pointRadius: 0
+            },
+            {
+              label: 'Live Staging Trajectory',
+              data: [],
+              showLine: true,
+              borderColor: '#10b981',
+              backgroundColor: '#10b981',
+              borderWidth: 2.5,
+              pointRadius: (ctx) => {
+                const index = ctx.dataIndex;
+                const count = ctx.dataset.data.length;
+                return index === count - 1 ? 6 : 2;
+              },
+              pointHoverRadius: 8
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: false,
+          scales: {
+            x: {
+              type: 'linear',
+              position: 'bottom',
+              min: 0,
+              max: 60,
+              title: {
+                display: true,
+                text: 'Electric Charge Q (nC)',
+                color: '#94a3b8',
+                font: { family: 'JetBrains Mono', size: 11 }
+              },
+              grid: { color: 'rgba(255, 255, 255, 0.05)' },
+              ticks: { color: '#64748b', font: { family: 'JetBrains Mono' } }
+            },
+            y: {
+              min: 0,
+              max: 4.5,
+              title: {
+                display: true,
+                text: 'Velocity v (m/s)',
+                color: '#94a3b8',
+                font: { family: 'JetBrains Mono', size: 11 }
+              },
+              grid: { color: 'rgba(255, 255, 255, 0.05)' },
+              ticks: { color: '#64748b', font: { family: 'JetBrains Mono' } }
+            }
+          },
+          plugins: {
+            legend: {
+              labels: {
+                color: '#cbd5e1',
+                font: { family: 'Inter', size: 10 },
+                boxWidth: 12
+              }
+            },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => `Q: ${ctx.parsed.x.toFixed(1)} nC | v: ${ctx.parsed.y.toFixed(2)} m/s`
+              }
+            }
+          }
+        }
+      });
+
+      // 2. Time Series Chart: Rolling Charge & Bleed Current
+      const ctxTime = document.getElementById('timeSeriesChart').getContext('2d');
+      timeChart = new Chart(ctxTime, {
+        type: 'line',
+        data: {
+          labels: Array.from({ length: 40 }, (_, i) => -39 + i),
+          datasets: [
+            {
+              label: 'Surface Charge Q (nC)',
+              data: Array(40).fill(0),
+              borderColor: '#38bdf8',
+              borderWidth: 1.5,
+              pointRadius: 0,
+              yAxisID: 'yQ'
+            },
+            {
+              label: 'Neutralizer Bleed (µA)',
+              data: Array(40).fill(0),
+              borderColor: '#c084fc',
+              borderWidth: 1.5,
+              pointRadius: 0,
+              yAxisID: 'yBleed'
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: false,
+          scales: {
+            x: {
+              display: false
+            },
+            yQ: {
+              type: 'linear',
+              position: 'left',
+              min: 0,
+              max: 55,
+              grid: { color: 'rgba(255,255,255,0.04)' },
+              ticks: { color: '#38bdf8', font: { family: 'JetBrains Mono', size: 9 } }
+            },
+            yBleed: {
+              type: 'linear',
+              position: 'right',
+              min: 0,
+              max: 200,
+              grid: { display: false },
+              ticks: { color: '#c084fc', font: { family: 'JetBrains Mono', size: 9 } }
+            }
+          },
+          plugins: {
+            legend: { display: false }
+          }
+        }
+      });
+    }
+
+    // =========================================================================
+    // Simulation Physics Step & Control Mechanics
+    // =========================================================================
+    function stepSimulation() {
+      const dt = 0.04; // 40 ms per tick
+
+      if (simState.active) {
+        // Accelerate velocity toward pusher target impulse
+        if (simState.velocity < simState.impulseForce) {
+          simState.velocity += 1.8 * dt;
+        }
+
+        simState.distance += simState.velocity * dt;
+
+        // Calculate Triboelectric Generation dQ/dt
+        // Friction contribution active while guide pins are in contact (distance < 1.2 meters)
+        let dQ_friction = 0;
+        if (simState.distance < 1.2) {
+          let frictionMult = simState.frictionCoeff * 14.5;
+          if (simState.faultType === 'guideGalling') frictionMult *= 4.2;
+          dQ_friction = frictionMult * simState.velocity * (1.2 - simState.distance);
+        }
+
+        // Plume contribution
+        let dQ_plume = simState.plumeDensity * 1.8;
+        if (simState.faultType === 'plumeSpike') dQ_plume *= 3.8;
+
+        // Total raw charge rate
+        let netGen = (dQ_friction + dQ_plume) * dt;
+
+        // Natural passive bonding wire leakage (unless severed)
+        let passiveBleed = 0;
+        if (simState.faultType !== 'bondingBreak') {
+          passiveBleed = simState.charge * 0.15 * dt;
+        }
+
+        // Autonomous State Observer & Active Neutralizer Bleed
+        let activeBleed = 0;
+        simState.bleedCurrent = 0;
+
+        // Critical threshold check for observer
+        const qSparkThreshold = 16.0 + 8.0 * Math.pow(simState.velocity, 1.1);
+
+        if (simState.sentryAutonomous) {
+          // If charge exceeds safe margin (70% of spark limit), fire neutralizing emitter
+          if (simState.charge > qSparkThreshold * 0.65 || simState.faultType !== 'none') {
+            const bleedCapacity = 145.0; // microamps equivalent
+            simState.bleedCurrent = Math.min(bleedCapacity, simState.charge * 4.2 + 25);
+            activeBleed = simState.bleedCurrent * 0.45 * dt;
+          }
+        }
+
+        // Update net surface charge state
+        simState.charge = Math.max(0, simState.charge + netGen - passiveBleed - activeBleed);
+
+        // Record Trajectory Data Points for Phase Space Plot
+        if (simState.historyTicks % 2 === 0) {
+          simState.phaseTraj.push({ x: simState.charge, y: simState.velocity });
+          if (simState.phaseTraj.length > 50) simState.phaseTraj.shift();
+        }
+
+        // Check if Staging Distance Reached Separation Clear
+        if (simState.distance > 3.8) {
+          simState.active = false;
+          simState.separated = true;
+          document.getElementById('headerFlightMode').innerText = 'SEPARATED (SAFE ORBIT)';
+        }
+      }
+
+      // Spawn visual particles on canvas
+      spawnVisualParticles();
+
+      // Update HUD Numbers
+      updateTelemetryDOM();
+
+      // Push to charts every 2 ticks
+      simState.historyTicks++;
+      if (simState.historyTicks % 2 === 0) {
+        updateChartDOM();
+      }
+
+      // Render Canvas
+      drawCanvas();
+    }
+
+    function updateTelemetryDOM() {
+      document.getElementById('metricVel').innerText = simState.velocity.toFixed(2);
+      document.getElementById('metricCharge').innerText = simState.charge.toFixed(1);
+      document.getElementById('metricBleedRate').innerText = simState.bleedCurrent.toFixed(1);
+
+      // Hazard Margin calculation
+      const qSpark = 16.0 + 8.0 * Math.pow(Math.max(simState.velocity, 0.1), 1.1);
+      const margin = Math.max(0, 100 - (simState.charge / qSpark) * 100);
+      document.getElementById('metricMargin').innerText = margin.toFixed(1);
+
+      const safetyLabel = document.getElementById('safetyStatusLabel');
+      const safetyGlow = document.getElementById('safetyGlow');
+      const marginDot = document.getElementById('marginDot');
+      const plasmaOverlay = document.getElementById('plasmaGlowOverlay');
+
+      if (simState.charge >= qSpark) {
+        // DETONATION / SPARK TRIGGERED
+        safetyLabel.innerText = 'CATASTROPHIC SPARK DETECTED';
+        safetyLabel.className = 'text-rose-500 font-bold';
+        safetyGlow.className = 'w-2 h-2 rounded-full bg-rose-500 animate-ping';
+        marginDot.className = 'inline-block w-1.5 h-1.5 rounded-full bg-rose-500';
+        document.getElementById('boltStatus').innerText = 'PREMATURE DETONATION ARREST';
+        document.getElementById('boltStatus').className = 'text-rose-400 font-bold';
+      } else if (simState.charge > qSpark * 0.65) {
+        // HAZARD WARNING
+        safetyLabel.innerText = 'SENTRY ACTIVE: BLEEDING';
+        safetyLabel.className = 'text-amber-400 font-medium';
+        safetyGlow.className = 'w-2 h-2 rounded-full bg-amber-400 animate-pulse';
+        marginDot.className = 'inline-block w-1.5 h-1.5 rounded-full bg-amber-400';
+      } else {
+        safetyLabel.innerText = 'PYRO SAFE';
+        safetyLabel.className = 'text-emerald-400 font-medium';
+        safetyGlow.className = 'w-2 h-2 rounded-full bg-emerald-400';
+        marginDot.className = 'inline-block w-1.5 h-1.5 rounded-full bg-emerald-400';
+      }
+
+      // Plasma emitter overlay state
+      if (simState.bleedCurrent > 10) {
+        plasmaOverlay.style.opacity = '1';
+      } else {
+        plasmaOverlay.style.opacity = '0';
+      }
+
+      // RCS cold gas indicator
+      const rcsIndicator = document.getElementById('rcsIndicator');
+      if (simState.active) {
+        rcsIndicator.innerText = 'FIRING (ATTITUDE DIVERTER)';
+        rcsIndicator.className = 'px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800';
+      } else {
+        rcsIndicator.innerText = 'IDLE';
+        rcsIndicator.className = 'px-2 py-0.5 rounded bg-slate-800 text-slate-400';
+      }
+    }
+
+    function updateChartDOM() {
+      if (phaseChart) {
+        phaseChart.data.datasets[2].data = [...simState.phaseTraj];
+        
+        // Dynamic coloring of trajectory head
+        const qSpark = 16.0 + 8.0 * Math.pow(Math.max(simState.velocity, 0.1), 1.1);
+        if (simState.charge >= qSpark) {
+          phaseChart.data.datasets[2].borderColor = '#ef4444';
+          phaseChart.data.datasets[2].backgroundColor = '#ef4444';
+        } else if (simState.charge > qSpark * 0.65) {
+          phaseChart.data.datasets[2].borderColor = '#f59e0b';
+          phaseChart.data.datasets[2].backgroundColor = '#f59e0b';
+        } else {
+          phaseChart.data.datasets[2].borderColor = '#10b981';
+          phaseChart.data.datasets[2].backgroundColor = '#10b981';
+        }
+
+        phaseChart.update('none');
+      }
+
+      if (timeChart) {
+        const qData = timeChart.data.datasets[0].data;
+        const bData = timeChart.data.datasets[1].data;
+        qData.shift();
+        bData.shift();
+        qData.push(simState.charge);
+        bData.push(simState.bleedCurrent);
+        timeChart.update('none');
+      }
+    }
+
+    // =========================================================================
+    // Canvas 2D Rendering Engine: Lander Descent & Ascent Stages
+    // =========================================================================
+    function spawnVisualParticles() {
+      // Spawn Cold-Gas Plume Particles when active
+      if (simState.active) {
+        for (let i = 0; i < 3; i++) {
+          particles.push({
+            x: 180 - simState.distance * 25,
+            y: 120 + (Math.random() - 0.5) * 40,
+            vx: -3 - Math.random() * 4,
+            vy: (Math.random() - 0.5) * 2,
+            life: 1.0,
+            color: 'rgba(56, 189, 248, 0.6)',
+            type: 'gas'
+          });
+        }
+      }
+
+      // Spawn Plasma Bleed Particles if active
+      if (simState.bleedCurrent > 5) {
+        for (let i = 0; i < 4; i++) {
+          particles.push({
+            x: 220 + simState.distance * 35,
+            y: 160 + (Math.random() - 0.5) * 60,
+            vx: 4 + Math.random() * 5,
+            vy: (Math.random() - 0.5) * 3,
+            life: 1.0,
+            color: 'rgba(192, 132, 252, 0.85)',
+            type: 'plasma'
+          });
+        }
+      }
+    }
+
+    function drawCanvas() {
+      const rect = canvas.getBoundingClientRect();
+      const w = rect.width || 600;
+      const h = rect.height || 340;
+
+      ctx.clearRect(0, 0, w, h);
+
+      // 1. Draw Starfield & Lunar Horizon in Background
+      ctx.fillStyle = '#020409';
+      ctx.fillRect(0, 0, w, h);
+
+      // Distant Lunar Limb curve
+      ctx.save();
+      const grad = ctx.createLinearGradient(0, h - 50, 0, h);
+      grad.addColorStop(0, '#111827');
+      grad.addColorStop(1, '#030712');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.ellipse(w / 2, h + 180, w * 0.9, 240, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      // Earth / Moon texture glow
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.15)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(w - 70, 60, 24, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // 2. Hardware Geometry
+      const centerY = h / 2;
+      const sepPixelDist = simState.distance * 40; // pixel scale
+
+      // BASELINE: Descent Stage (Left side - Fixed or slow retreat)
+      const descentX = 140 - sepPixelDist * 0.25;
+      drawDescentStage(descentX, centerY);
+
+      // ASCENT STAGE / SEPARATING VEHICLE (Right side - accelerates right)
+      const ascentX = 260 + sepPixelDist * 1.1;
+      drawAscentStage(ascentX, centerY);
+
+      // SEPARATION GUIDE PINS & PYRO BOLT PLANE
+      drawSeparationInterface(descentX + 45, ascentX - 45, centerY);
+
+      // 3. Render Particles
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life -= 0.025;
+
+        if (p.life <= 0) {
+          particles.splice(i, 1);
+          continue;
+        }
+
+        ctx.fillStyle = p.color;
+        ctx.globalAlpha = p.life;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.type === 'plasma' ? 2.5 : 1.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1.0;
+      }
+    }
+
+    function drawDescentStage(x, y) {
+      ctx.save();
+      ctx.translate(x, y);
+
+      // Gold Foil Insulation Body
+      ctx.fillStyle = '#b45309';
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 1.5;
+      ctx.fillRect(-60, -45, 90, 90);
+      ctx.strokeRect(-60, -45, 90, 90);
+
+      // Foil quilt hatch lines
+      ctx.strokeStyle = 'rgba(245, 158, 11, 0.25)';
+      for (let i = -40; i < 30; i += 15) {
+        ctx.beginPath();
+        ctx.moveTo(i, -45);
+        ctx.lineTo(i, 45);
+        ctx.stroke();
+      }
+
+      // Landing Gear Truss hints
+      ctx.strokeStyle = '#475569';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(-50, 40);
+      ctx.lineTo(-95, 75);
+      ctx.moveTo(-50, -40);
+      ctx.lineTo(-95, -75);
+      ctx.stroke();
+
+      // Label
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '10px JetBrains Mono';
+      ctx.fillText('DESCENT STAGE', -58, 5);
+
+      ctx.restore();
+    }
+
+    function drawAscentStage(x, y) {
+      ctx.save();
+      ctx.translate(x, y);
+
+      // Cockpit / Ascent Cabin Geometry
+      ctx.fillStyle = '#1e293b';
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 1.5;
+
+      ctx.beginPath();
+      ctx.moveTo(-35, -40);
+      ctx.lineTo(35, -25);
+      ctx.lineTo(55, 0);
+      ctx.lineTo(35, 25);
+      ctx.moveTo(35, 25);
+      ctx.lineTo(-35, 40);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Optical Visor Window
+      ctx.fillStyle = '#06b6d4';
+      ctx.beginPath();
+      ctx.moveTo(15, -15);
+      ctx.lineTo(38, -8);
+      ctx.lineTo(38, 8);
+      ctx.lineTo(15, 15);
+      ctx.closePath();
+      ctx.fill();
+
+      // PyroDischarge Sentry Neutralizer Array Head
+      ctx.fillStyle = simState.bleedCurrent > 5 ? '#c084fc' : '#475569';
+      ctx.beginPath();
+      ctx.arc(-35, -20, 4, 0, Math.PI * 2);
+      ctx.arc(-35, 20, 4, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Label
+      ctx.fillStyle = '#cbd5e1';
+      ctx.font = '10px JetBrains Mono';
+      ctx.fillText('ASCENT CABIN', -25, 4);
+
+      ctx.restore();
+    }
+
+    function drawSeparationInterface(leftEdge, rightEdge, centerY) {
+      ctx.save();
+
+      // If still within mechanical guide track clearance (< 1.2m equivalent)
+      if (simState.distance < 1.4) {
+        // Guide Rail Collet
+        ctx.strokeStyle = '#64748b';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(leftEdge, centerY - 25);
+        ctx.lineTo(rightEdge, centerY - 25);
+        ctx.moveTo(leftEdge, centerY + 25);
+        ctx.lineTo(rightEdge, centerY + 25);
+        ctx.stroke();
+
+        // High Voltage Spark Arcing if critical
+        const qSpark = 16.0 + 8.0 * Math.pow(Math.max(simState.velocity, 0.1), 1.1);
+        if (simState.charge >= qSpark) {
+          // Lethal ESD Spark visualization
+          ctx.strokeStyle = '#ef4444';
+          ctx.lineWidth = 2.5;
+          ctx.beginPath();
+          let currX = leftEdge;
+          let currY = centerY;
+          ctx.moveTo(currX, currY);
+          while (currX < rightEdge) {
+            currX += 6;
+            currY = centerY + (Math.random() - 0.5) * 30;
+            ctx.lineTo(currX, currY);
+          }
+          ctx.stroke();
+        } else if (simState.charge > 12) {
+          // Minor pre-ionization glow
+          ctx.strokeStyle = 'rgba(56, 189, 248, 0.4)';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(leftEdge, centerY - 10);
+          ctx.lineTo(rightEdge, centerY - 10);
+          ctx.stroke();
+        }
+      }
+
+      ctx.restore();
+    }
+
+    // =========================================================================
+    // User Interactions & Controls
+    // =========================================================================
+    function triggerSeparation() {
+      if (simState.active) return;
+      simState.active = true;
+      simState.separated = false;
+      document.getElementById('headerFlightMode').innerText = 'SEPARATION IN PROGRESS';
+    }
+
+    function resetSimulation() {
+      simState.active = false;
+      simState.separated = false;
+      simState.distance = 0.0;
+      simState.velocity = 0.0;
+      simState.charge = 0.0;
+      simState.bleedCurrent = 0.0;
+      simState.phaseTraj = [];
+      simState.faultType = 'none';
+      document.getElementById('headerFlightMode').innerText = 'PRE-SEPARATION ARMED';
+      document.getElementById('boltStatus').innerText = '4x NSI-1 CONNECTED';
+      document.getElementById('boltStatus').className = 'text-emerald-400 font-semibold';
+      updateTelemetryDOM();
+    }
+
+    function toggleSentryAutonomy() {
+      simState.sentryAutonomous = !simState.sentryAutonomous;
+      const btn = document.getElementById('btnToggleSentry');
+      const label = document.getElementById('sentryModeLabel');
+
+      if (simState.sentryAutonomous) {
+        btn.className = "px-3 py-1.5 rounded-lg bg-emerald-950/70 border border-emerald-500/40 text-emerald-300 font-mono-code font-semibold hover:bg-emerald-900/60 transition flex items-center space-x-1.5";
+        label.innerText = "AUTONOMOUS SENTRY: ACTIVE";
+      } else {
+        btn.className = "px-3 py-1.5 rounded-lg bg-rose-950/70 border border-rose-500/40 text-rose-300 font-mono-code font-semibold hover:bg-rose-900/60 transition flex items-center space-x-1.5";
+        label.innerText = "SENTRY: OVERRIDDEN (OFF)";
+      }
+    }
+
+    function updateSliders() {
+      simState.frictionCoeff = parseFloat(document.getElementById('sliderFriction').value);
+      document.getElementById('lblFriction').innerText = simState.frictionCoeff.toFixed(2);
+
+      simState.plumeDensity = parseFloat(document.getElementById('sliderPlume').value);
+      document.getElementById('lblPlume').innerHTML = `$${simState.plumeDensity.toFixed(1)} \\times 10^{18}\\text{ m}^{-3}$`;
+
+      simState.impulseForce = parseFloat(document.getElementById('sliderImpulse').value);
+      document.getElementById('lblImpulse').innerText = `${simState.impulseForce.toFixed(2)} m/s`;
+
+      if (window.MathJax && window.MathJax.typesetPromise) {
+        window.MathJax.typesetPromise();
+      }
+    }
+
+    function injectFault(type) {
+      simState.faultType = type;
+      if (type === 'bondingBreak') {
+        simState.charge += 18.0;
+      } else if (type === 'plumeSpike') {
+        simState.charge += 12.0;
+      } else if (type === 'guideGalling') {
+        simState.charge += 22.0;
+      } else if (type === 'nominalSafe') {
+        simState.charge = 0.0;
+      }
+      if (!simState.active) {
+        triggerSeparation();
+      }
+    }
+
+    // =========================================================================
+    // Initialization on DOM Load
+    // =========================================================================
+    window.addEventListener('DOMContentLoaded', () => {
+      // 1. Initialize Icons
+      if (window.lucide) {
+        window.lucide.createIcons();
+      }
+
+      // 2. Setup Canvas
+      resizeCanvas();
+
+      // 3. Setup Charts
+      initCharts();
+
+      // 4. Start Physics Animation Loop
+      setInterval(stepSimulation, 40);
+    });
+  </script>
+</body>
+</html>
